@@ -58,5 +58,5 @@ Workbenches and water containers move well.
 
 I had seen with Telekinesis that vehicle modules could be moved relative to the rest of the car, which made things... interesting.  So, they should be blocked by default here.
 
-You can even move road signs.  Why?  I don't know.
+You can even move road signs and players.
 
