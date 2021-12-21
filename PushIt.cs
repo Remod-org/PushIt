@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using System.Collections;
@@ -31,6 +31,10 @@ namespace Oxide.Plugins
                 ["startpush"] = "Pushing {0}",
                 ["endpush"] = "No longer pushing {0}",
                 ["nopushpull"] = "You cannot interact with a {0}",
+                ["rotating"] = "Rotating {0}clockwise",
+                ["pulling"] = "Pulling from the {0}",
+                ["pushing"] = "Pushing from the {0}",
+                ["toofar"] = "Target is too far away",
                 ["obstruction"] = "We hit {0}.  Backing up...",
                 ["notauthorized"] = "You don't have permission to do that !!"
             }, this);
@@ -44,33 +48,9 @@ namespace Oxide.Plugins
             Instance = this;
         }
 
-        //private void OnHammerHit(BasePlayer player, HitInfo hit)
-        //{
-        //    BaseEntity target = hit.HitEntity;
-
-        //    float depth = target.bounds.size.z;
-        //    float width = target.bounds.size.x;
-
-        //    Vector3 rayPos = target.transform.TransformPoint(Vector3.forward * (depth / 2)); // forward
-        //    Vector3 rayPos3 = target.transform.TransformPoint(Vector3.right * (width / 2)); // left
-        //    Vector3 rayPos4 = target.transform.TransformPoint(Vector3.right * -(width / 2)); //right
-        //    Vector3 rayPosBack = target.transform.TransformPoint(Vector3.forward * -(depth / 2)); //back
-
-        //    player.SendConsoleCommand("ddraw.line", 30, Color.blue, target.transform.position, rayPos);
-        //    player.SendConsoleCommand("ddraw.line", 30, Color.green, target.transform.position, rayPos3);
-        //    player.SendConsoleCommand("ddraw.line", 30, Color.red, target.transform.position, rayPos4);
-        //    player.SendConsoleCommand("ddraw.line", 30, Color.blue, target.transform.position, rayPosBack);
-        //    //player.SendConsoleCommand("ddraw.text", 60, Color.green, target.transform.position, "<size=20>CTR</size>");
-        //    //player.SendConsoleCommand("ddraw.text", 60, Color.blue, left, "<size=20>left</size>");
-        //    //player.SendConsoleCommand("ddraw.text", 60, Color.blue, right, "<size=20>right</size>");
-        //}
-
         private void DoLog(string message)
         {
-            if (debug)
-            {
-                Interface.Oxide.LogInfo(message);
-            }
+            if (debug) Interface.Oxide.LogInfo(message);
         }
 
         private void Unload()
@@ -112,41 +92,6 @@ namespace Oxide.Plugins
             Message(iplayer, "startpush", entname);
         }
 
-        //private void OnPlayerInput(BasePlayer player, InputState input)
-        //{
-        //    if (player == null) return;
-        //    if (input == null) return;
-
-        //    //if (input.current.buttons > 0)
-        //    //    Puts($"OnPlayerInput: {input.current.buttons}");
-
-        //    if (pushentity.ContainsKey(player.userID))
-        //    {
-        //        BaseEntity ent = FindEntity(player);
-        //        PushMe haspush = ent.gameObject.GetComponent<PushMe>();
-        //        if (haspush == null) return;
-
-        //        //if (input.WasJustPressed(BUTTON.FIRE_PRIMARY))
-        //        //{
-        //        //    DoLog("Pressed use on a push entity");
-        //        //}
-        //        //else if (input.WasJustPressed(BUTTON.FIRE_SECONDARY))
-        //        //{
-        //        //    haspush.directional = -1;
-        //        //}
-        //    }
-        //}
-
-        private object CanLootEntity(BasePlayer player, StorageContainer container)
-        {
-            if (player == null) return null;
-            BaseEntity ent = FindEntity(player);
-            PushMe haspush = ent.gameObject.GetComponent<PushMe>();
-            if (haspush == null) return null;
-
-            return true;
-        }
-
         private BaseEntity FindEntity(BasePlayer player)
         {
             RaycastHit hit;
@@ -175,10 +120,8 @@ namespace Oxide.Plugins
             public BasePlayer player;
             private readonly static int layerMask = LayerMask.GetMask(new[] { "Construction", "Deployed", "World", "Terrain" });
 
-            public bool atleft;
-            public bool atright;
-            public bool infront;
-            public bool inback;
+            private bool atleft;
+            private bool atright;
 
             private float depth;
             private float width;
@@ -192,6 +135,7 @@ namespace Oxide.Plugins
             private Vector3 checkpos;
             private float checkDistance;
             private string obstring;
+            private string pushtring;
 
             private void Awake()
             {
@@ -227,82 +171,14 @@ namespace Oxide.Plugins
                 }
             }
 
-            private void DetectSide()
-            {
-                atleft = false; atright = false; infront = false; inback = false;
-
-                front = target.transform.TransformPoint(Vector3.forward * (depth / 2)); // forward
-                left = target.transform.TransformPoint(Vector3.right * (width / 2)); // left
-                right = target.transform.TransformPoint(Vector3.right * -(width / 2)); //right
-                back = target.transform.TransformPoint(Vector3.forward * -(depth / 2)); //back
-
-                float f = Vector3.Distance(player.transform.position, front);
-                float b = Vector3.Distance(player.transform.position, back);
-                float l = Vector3.Distance(player.transform.position, left);
-                float r = Vector3.Distance(player.transform.position, right);
-
-                if (l < r)
-                {
-                    atleft = true; atright = false;
-                }
-                else
-                {
-                    atright = true; atleft = false;
-                }
-
-                if (f < b)
-                {
-                    if (f > l && atleft)
-                    {
-                        Instance.DoLog("You are to the left of the target.");
-                        checkDistance = width / 6;
-                        checkpos = right;
-                        obstring = "right";
-                    }
-                    else if (f > r && atright)
-                    {
-                        Instance.DoLog("You are to the right of the target.");
-                        checkDistance = width / 6;
-                        checkpos = left;
-                        obstring = "left";
-                    }
-                    else
-                    {
-                        Instance.DoLog("You are in front of the target.");
-                        infront = true;
-                        inback = false;
-                        checkDistance = depth / 6;
-                        checkpos = back;
-                        obstring = "rear";
-                    }
-                }
-                else if (b > l && atleft)
-                {
-                    Instance.DoLog("You are to the left of the target.");
-                    checkDistance = width / 6;
-                    checkpos = right;
-                    obstring = "right";
-                }
-                else if (b > r && atright)
-                {
-                    Instance.DoLog("You are to the right of the target.");
-                    checkDistance = width / 6;
-                    checkpos = left;
-                    obstring = "left";
-                }
-                else
-                {
-                    Instance.DoLog("You are in back of the target.");
-                    inback = true;
-                    infront = false;
-                    checkDistance = depth / 6;
-                    checkpos = front;
-                    obstring = "front";
-                }
-            }
-
             public void PushPull(float directional = 1)
             {
+                if (Vector3.Distance(player.transform.position, target.transform.position) > Instance.configData.minDistance)
+                {
+                    Instance.Message(player.IPlayer, "toofar");
+                    return;
+                }
+
                 float savey = target.transform.position.y;
                 Instance.DoLog($"Player position: {player.transform.position}");
                 Instance.DoLog($"Old position: {target.transform.position}");
@@ -312,12 +188,10 @@ namespace Oxide.Plugins
                 if (directional > 0)
                 {
                     // pull
-                    //direction = player.transform.position - target.transform.position;
                     direction = player.transform.position - checkpos;
                 }
                 else
                 {
-                    //direction = target.transform.position - player.transform.position;
                     direction = checkpos - player.transform.position;
                 }
 
@@ -330,22 +204,31 @@ namespace Oxide.Plugins
                     return;
                 }
 
+                if (directional > 0)
+                {
+                    Instance.Message(player.IPlayer, "pulling", pushtring);
+                }
+                else
+                {
+                    Instance.Message(player.IPlayer, "pushing", pushtring);
+                }
                 Vector3 newpos = new Vector3(player.transform.position.x, savey, player.transform.position.z);
-                //target.transform.position = Vector3.MoveTowards(target.transform.position, player.transform.position, directional * 1f * Time.deltaTime);
                 target.transform.position = Vector3.MoveTowards(target.transform.position, newpos, directional * 1f * Time.deltaTime);
-                //target.transform.position.y.SnapTo(savey);
 
                 if (stab?.grounded == false) stab.grounded = true;
                 Instance.DoLog($"New position: {target.transform.position}");
 
                 ServerMgr.Instance.StartCoroutine(RefreshTrain());
-                //target.transform.hasChanged = true;
-                //target.UpdateNetworkGroup();
-                //target.SendNetworkUpdateImmediate();
             }
 
             private void Rotate(bool ccw = false)
             {
+                if (Vector3.Distance(player.transform.position, target.transform.position) > Instance.configData.minDistance)
+                {
+                    Instance.Message(player.IPlayer, "toofar");
+                    return;
+                }
+
                 if (ccw)
                 {
                     gameObject.transform.Rotate(0, -0.5f, 0);
@@ -379,12 +262,88 @@ namespace Oxide.Plugins
                 target.UpdateNetworkGroup();
                 yield return new WaitForEndOfFrame();
             }
+
+            private void DetectSide()
+            {
+                atleft = false; atright = false;
+
+                front = target.transform.TransformPoint(Vector3.forward * (depth / 2));
+                left = target.transform.TransformPoint(Vector3.right * (width / 2));
+                right = target.transform.TransformPoint(Vector3.right * -(width / 2));
+                back = target.transform.TransformPoint(Vector3.forward * -(depth / 2));
+
+                float fdist = Vector3.Distance(player.transform.position, front);
+                float bdist = Vector3.Distance(player.transform.position, back);
+                float ldist = Vector3.Distance(player.transform.position, left);
+                float rdist = Vector3.Distance(player.transform.position, right);
+
+                atright = true; atleft = false;
+                if (ldist < rdist)
+                {
+                    atleft = true; atright = false;
+                }
+
+                if (fdist < bdist)
+                {
+                    if (fdist > ldist && atleft)
+                    {
+                        Instance.DoLog("You are to the left of the target.");
+                        checkDistance = width / 6;
+                        checkpos = right;
+                        obstring = "right";
+                        pushtring = "left";
+                    }
+                    else if (fdist > rdist && atright)
+                    {
+                        Instance.DoLog("You are to the right of the target.");
+                        checkDistance = width / 6;
+                        checkpos = left;
+                        obstring = "left";
+                        pushtring = "right";
+                    }
+                    else
+                    {
+                        Instance.DoLog("You are in front of the target.");
+                        checkDistance = depth / 6;
+                        checkpos = back;
+                        obstring = "rear";
+                        pushtring = "front";
+                    }
+                }
+                else if (bdist > ldist && atleft)
+                {
+                    Instance.DoLog("You are to the left of the target.");
+                    checkDistance = width / 6;
+                    checkpos = right;
+                    obstring = "right";
+                    pushtring = "left";
+                }
+                else if (bdist > rdist && atright)
+                {
+                    Instance.DoLog("You are to the right of the target.");
+                    checkDistance = width / 6;
+                    checkpos = left;
+                    obstring = "left";
+                    pushtring = "right";
+                }
+                else
+                {
+                    Instance.DoLog("You are in back of the target.");
+                    checkDistance = depth / 6;
+                    checkpos = front;
+                    obstring = "front";
+                    pushtring = "rear";
+                }
+            }
         }
 
         private class ConfigData
         {
             [JsonProperty(PropertyName = "Disallow building blocks, doors, and windows")]
             public bool disallowBlocks;
+
+            [JsonProperty(PropertyName = "Minimum distance to maintain to the target")]
+            public float minDistance;
 
             public bool debug;
             public VersionNumber Version;
@@ -396,6 +355,7 @@ namespace Oxide.Plugins
             ConfigData config = new ConfigData
             {
                 disallowBlocks = true,
+                minDistance = 5f,
                 debug = false,
                 Version = Version
             };
@@ -405,6 +365,11 @@ namespace Oxide.Plugins
         private void LoadConfigVariables()
         {
             configData = Config.ReadObject<ConfigData>();
+
+            if (configData.minDistance == 0)
+            {
+                configData.minDistance = 5;
+            }
 
             configData.Version = Version;
             SaveConfig(configData);
