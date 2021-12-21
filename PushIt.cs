@@ -17,6 +17,7 @@ namespace Oxide.Plugins
         private ConfigData configData;
         public static PushIt Instance;
         public bool debug = true;
+        private const string permPush = "pushit.use";
 
         #region Message
         private string Lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
@@ -28,9 +29,10 @@ namespace Oxide.Plugins
             lang.RegisterMessages(new Dictionary<string, string>
             {
                 ["noentity"] = "Unable to find pushable entity",
+                ["nointeract"] = "Interaction with {0} is disallowed.",
+                ["noblocks"] = "Interaction with building blocks is disallowed.",
                 ["startpush"] = "Pushing {0}",
                 ["endpush"] = "No longer pushing {0}",
-                ["nopushpull"] = "You cannot interact with a {0}",
                 ["rotating"] = "Rotating {0}clockwise",
                 ["pulling"] = "Pulling from the {0}",
                 ["pushing"] = "Pushing from the {0}",
@@ -45,6 +47,7 @@ namespace Oxide.Plugins
         {
             LoadConfigVariables();
             AddCovalenceCommand("push", "PushPullCmd");
+            permission.RegisterPermission(permPush, this);
             Instance = this;
         }
 
@@ -68,6 +71,7 @@ namespace Oxide.Plugins
 
         private void PushPullCmd(IPlayer iplayer, string command, string[] args)
         {
+            if (!iplayer.HasPermission(permPush)) { Message(iplayer, "notauthorized"); return; }
             BasePlayer player = iplayer.Object as BasePlayer;
             BaseEntity ent = FindEntity(player);
             if (ent == null)
@@ -100,6 +104,7 @@ namespace Oxide.Plugins
             string entity_name = hit.GetEntity().ShortPrefabName;
             if (hit.GetEntity() is BuildingBlock && configData.disallowBlocks)
             {
+                Message(player.IPlayer, "noblocks", entity_name);
                 return null;
             }
             else if ((entity_name.Contains("shutter") || entity_name.Contains("door") || entity_name.Contains("reinforced") ||
