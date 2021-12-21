@@ -7,9 +7,8 @@ Permission is required to use, but it is recommended that you either have the Re
 
 For items that can be picked up anyway, if they get stuck inside a wall for some reason they can be removed easily without another plugin.  But, keep this potential problem in mind for items that cannot be picked up.
 
-<p align="center">
-<iframe width="1280" height="720" src="https://www.youtube.com/embed/w-wzVZowWdE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</p>
+[![Watch the video](https://i.imgur.com/uviGsoa.png)](https://www.youtube.com/watch?v=w-wzVZowWdE)
+
 
 ## Commands
 
