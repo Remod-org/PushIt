@@ -109,6 +109,11 @@ namespace Oxide.Plugins
                 Message(player.IPlayer, "nointeract", entity_name);
                 return null;
             }
+            else if (entity_name.Contains("vehicle") && configData.disallowOthers)
+            {
+                Message(player.IPlayer, "nointeract", entity_name);
+                return null;
+            }
 
             return hit.GetEntity();
         }
@@ -218,7 +223,7 @@ namespace Oxide.Plugins
                 if (stab?.grounded == false) stab.grounded = true;
                 Instance.DoLog($"New position: {target.transform.position}");
 
-                ServerMgr.Instance.StartCoroutine(RefreshTrain());
+                ServerMgr.Instance.StartCoroutine(RefreshChildren());
             }
 
             private void Rotate(bool ccw = false)
@@ -237,19 +242,10 @@ namespace Oxide.Plugins
                 {
                     gameObject.transform.Rotate(0, +0.5f, 0);
                 }
-                ServerMgr.Instance.StartCoroutine(RefreshTrain());
+                ServerMgr.Instance.StartCoroutine(RefreshChildren());
             }
 
-            //private IEnumerator RefreshTrain()
-            //{
-            //    target.transform.hasChanged = true;
-            //    target.SendNetworkUpdateImmediate();
-            //    target.UpdateNetworkGroup();
-            //    target.gameObject.GetComponent<Model>().transform.hasChanged = true;
-            //    yield return new WaitForEndOfFrame();
-            //}
-
-            private IEnumerator RefreshTrain()
+            private IEnumerator RefreshChildren()
             {
                 target.transform.hasChanged = true;
                 for (int i = 0; i < target.children.Count; i++)
@@ -342,6 +338,9 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "Disallow building blocks, doors, and windows")]
             public bool disallowBlocks;
 
+            [JsonProperty(PropertyName = "Disallow other things that can cause trouble")]
+            public bool disallowOthers;
+
             [JsonProperty(PropertyName = "Minimum distance to maintain to the target")]
             public float minDistance;
 
@@ -355,6 +354,7 @@ namespace Oxide.Plugins
             ConfigData config = new ConfigData
             {
                 disallowBlocks = true,
+                disallowOthers = true,
                 minDistance = 5f,
                 debug = false,
                 Version = Version
