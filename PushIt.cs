@@ -3,21 +3,19 @@ using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("PushIt", "RFC1920", "1.0.1")]
+    [Info("PushIt", "RFC1920", "1.0.2")]
     [Description("Rearrange furniture by pushing it into place.")]
     internal class PushIt : RustPlugin
     {
-        public Dictionary<ulong, ulong> pushentity = new Dictionary<ulong, ulong>();
-
         private ConfigData configData;
         public static PushIt Instance;
         public bool debug = true;
         private const string permPush = "pushit.use";
+        public Dictionary<ulong, ulong> pushentity = new Dictionary<ulong, ulong>();
 
         #region Message
         private string Lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
@@ -34,6 +32,7 @@ namespace Oxide.Plugins
                 ["startpush"] = "Pushing {0}",
                 ["endpush"] = "No longer pushing {0}",
                 ["rotating"] = "Rotating {0}clockwise",
+                ["counter"] = "counter-",
                 ["pulling"] = "Pulling from the {0}",
                 ["pushing"] = "Pushing from the {0}",
                 ["toofar"] = "Target is too far away",
@@ -110,6 +109,16 @@ namespace Oxide.Plugins
             else if ((entity_name.Contains("shutter") || entity_name.Contains("door") || entity_name.Contains("reinforced") ||
                      entity_name.Contains("shopfront") || entity_name.Contains("bars") || entity_name.Contains("hatch") ||
                      entity_name.Contains("garagedoor") || entity_name.Contains("cell") || entity_name.Contains("fence")) && configData.disallowBlocks)
+            {
+                Message(player.IPlayer, "nointeract", entity_name);
+                return null;
+            }
+            else if (hit.GetEntity() is BasePlayer && configData.disallowPlayer)
+            {
+                Message(player.IPlayer, "nointeract", entity_name);
+                return null;
+            }
+            else if ((hit.GetEntity() is NPCPlayer || hit.GetEntity() is global::HumanNPC || hit.GetEntity() is ScientistNPC) && configData.disallowNPC)
             {
                 Message(player.IPlayer, "nointeract", entity_name);
                 return null;
@@ -343,6 +352,12 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "Disallow building blocks, doors, and windows")]
             public bool disallowBlocks;
 
+            [JsonProperty(PropertyName = "Disallow moving players")]
+            public bool disallowPlayer;
+
+            [JsonProperty(PropertyName = "Disallow moving NPCs")]
+            public bool disallowNPC;
+
             [JsonProperty(PropertyName = "Disallow other things that can cause trouble")]
             public bool disallowOthers;
 
@@ -360,6 +375,8 @@ namespace Oxide.Plugins
             {
                 disallowBlocks = true,
                 disallowOthers = true,
+                disallowPlayer = true,
+                disallowNPC = true,
                 minDistance = 5f,
                 debug = false,
                 Version = Version
