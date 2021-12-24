@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
+using Rust;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -142,6 +143,7 @@ namespace Oxide.Plugins
             private bool atleft;
             private bool atright;
 
+            private float height;
             private float depth;
             private float width;
 
@@ -159,8 +161,18 @@ namespace Oxide.Plugins
             private void Awake()
             {
                 target = gameObject.GetComponent<BaseEntity>();
+                height = target.bounds.size.y;
                 depth = target.bounds.size.z;
                 width = target.bounds.size.x;
+            }
+
+            private void OnDestroy()
+            {
+            }
+
+            private void OnTriggerEnter(Collider col)
+            {
+                Instance.DoLog($"Trigger Enter: {col.gameObject.name}");
             }
 
             private void FixedUpdate()
@@ -216,7 +228,7 @@ namespace Oxide.Plugins
 
                 Instance.DoLog($"Checking for obstruction at {checkpos.ToString()} ({obstring}), distance: {checkDistance.ToString()}");
                 RaycastHit hit;
-                if (Physics.Raycast(checkpos, direction, out hit, checkDistance, layerMask, QueryTriggerInteraction.Collide) && !hit.GetEntity().ToString().Contains("floor"))
+                if (Physics.Raycast(checkpos, direction, out hit, checkDistance, layerMask, QueryTriggerInteraction.Collide) && !hit.GetEntity().ToString().Contains("floor") && !hit.GetEntity().ToString().Contains("rug"))
                 {
                     Instance.DoLog($"I hit {hit.GetEntity()}, backing up!");
                     Instance.Message(player.IPlayer, "obstruction", hit.GetEntity());
