@@ -195,10 +195,7 @@ namespace Oxide.Plugins
                         Rotate(true);
                         return;
                     }
-                    else
-                    {
-                        Rotate();
-                    }
+                    Rotate();
                 }
             }
 
@@ -210,29 +207,26 @@ namespace Oxide.Plugins
                     return;
                 }
 
-                float savey = target.transform.position.y;
                 Instance.DoLog($"Player position: {player.transform.position}");
                 Instance.DoLog($"Old position: {target.transform.position}");
+                Instance.DoLog($"Checking for obstruction at {checkpos.ToString()} ({obstring}), distance: {checkDistance.ToString()}, directional {directional.ToString()}");
 
                 DetectSide();
-
-                if (directional > 0)
+                if (directional < 1)
                 {
-                    // pull
-                    direction = player.transform.position - checkpos;
-                }
-                else
-                {
-                    direction = checkpos - player.transform.position;
-                }
-
-                Instance.DoLog($"Checking for obstruction at {checkpos.ToString()} ({obstring}), distance: {checkDistance.ToString()}");
-                RaycastHit hit;
-                if (Physics.Raycast(checkpos, direction, out hit, checkDistance, layerMask, QueryTriggerInteraction.Collide) && !hit.GetEntity().ToString().Contains("floor") && !hit.GetEntity().ToString().Contains("rug"))
-                {
-                    Instance.DoLog($"I hit {hit.GetEntity()}, backing up!");
-                    Instance.Message(player.IPlayer, "obstruction", hit.GetEntity());
-                    return;
+                    // Only while pushing (and cannot see the other side)
+                    RaycastHit[] hits = Physics.RaycastAll(checkpos, direction, checkDistance);//, layerMask, QueryTriggerInteraction.Collide)
+                    for (int i = 0; i < hits.Length; i++)
+                    {
+                        string ihit = hits[i].GetEntity()?.ShortPrefabName;
+                        if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
+                        {
+                            Instance.DoLog($"Hit a {ihit}");
+                            player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
+                            Instance.Message(player.IPlayer, "obstruction", ihit);
+                            return;
+                        }
+                    }
                 }
 
                 if (directional > 0)
@@ -243,6 +237,8 @@ namespace Oxide.Plugins
                 {
                     Instance.Message(player.IPlayer, "pushing", pushtring);
                 }
+
+                float savey = target.transform.position.y;
                 Vector3 newpos = new Vector3(player.transform.position.x, savey, player.transform.position.z);
                 target.transform.position = Vector3.MoveTowards(target.transform.position, newpos, directional * 1f * Time.deltaTime);
 
@@ -268,6 +264,19 @@ namespace Oxide.Plugins
                 {
                     gameObject.transform.Rotate(0, +0.5f, 0);
                 }
+
+                //RaycastHit[] hits = Physics.RaycastAll(checkpos, direction, checkDistance);//, layerMask, QueryTriggerInteraction.Collide)
+                //for (int i = 0; i < hits.Length; i++)
+                //{
+                //    string ihit = hits[i].GetEntity()?.ShortPrefabName;
+                //    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
+                //    {
+                //        Instance.DoLog($"Hit a {ihit}");
+                //        player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
+                //        Instance.Message(player.IPlayer, "obstruction", ihit);
+                //        return;
+                //    }
+                //}
                 ServerMgr.Instance.StartCoroutine(RefreshChildren());
             }
 
@@ -288,7 +297,6 @@ namespace Oxide.Plugins
             private void DetectSide()
             {
                 atleft = false; atright = false;
-
                 front = target.transform.TransformPoint(Vector3.forward * (depth / 2));
                 left = target.transform.TransformPoint(Vector3.right * (width / 2));
                 right = target.transform.TransformPoint(Vector3.right * -(width / 2));
@@ -305,29 +313,37 @@ namespace Oxide.Plugins
                     atleft = true; atright = false;
                 }
 
+                Vector3 ybump = new Vector3(0, 0.1f, 0);
+                Vector3 cbump = new Vector3(0, height/2, 0);
                 if (fdist < bdist)
                 {
                     if (fdist > ldist && atleft)
                     {
                         Instance.DoLog("You are to the left of the target.");
-                        checkDistance = width / 6;
-                        checkpos = right;
+                        checkDistance = width / 10;
+                        checkpos = right + ybump;
+                        direction = right - target.transform.position;
+                        player.SendConsoleCommand("ddraw.arrow", 5, Color.white, target.transform.position + cbump, right + cbump, 0.25f);
                         obstring = "right";
                         pushtring = "left";
                     }
                     else if (fdist > rdist && atright)
                     {
                         Instance.DoLog("You are to the right of the target.");
-                        checkDistance = width / 6;
-                        checkpos = left;
+                        checkDistance = width / 10;
+                        checkpos = left + ybump;
+                        direction = left - target.transform.position;
+                        player.SendConsoleCommand("ddraw.arrow", 5, Color.white, target.transform.position + cbump, left + cbump, 0.25f);
                         obstring = "left";
                         pushtring = "right";
                     }
                     else
                     {
                         Instance.DoLog("You are in front of the target.");
-                        checkDistance = depth / 6;
-                        checkpos = back;
+                        checkDistance = depth / 10;
+                        checkpos = back + ybump;
+                        direction = back - target.transform.position;
+                        player.SendConsoleCommand("ddraw.arrow", 5, Color.white, target.transform.position + cbump, back + cbump, 0.25f);
                         obstring = "rear";
                         pushtring = "front";
                     }
@@ -335,30 +351,36 @@ namespace Oxide.Plugins
                 else if (bdist > ldist && atleft)
                 {
                     Instance.DoLog("You are to the left of the target.");
-                    checkDistance = width / 6;
-                    checkpos = right;
+                    checkDistance = width / 10;
+                    checkpos = right + ybump;
+                    direction = right - target.transform.position;
                     obstring = "right";
                     pushtring = "left";
                 }
                 else if (bdist > rdist && atright)
                 {
                     Instance.DoLog("You are to the right of the target.");
-                    checkDistance = width / 6;
-                    checkpos = left;
+                    checkDistance = width / 10;
+                    checkpos = left + ybump;
+                    direction = left - target.transform.position;
+                    player.SendConsoleCommand("ddraw.arrow", 5, Color.white, target.transform.position + cbump, left + cbump, 0.25f);
                     obstring = "left";
                     pushtring = "right";
                 }
                 else
                 {
                     Instance.DoLog("You are in back of the target.");
-                    checkDistance = depth / 6;
-                    checkpos = front;
+                    checkDistance = depth / 10;
+                    checkpos = front + ybump;
+                    direction = front - target.transform.position;
+                    player.SendConsoleCommand("ddraw.arrow", 5, Color.white, target.transform.position + cbump, front + cbump, 0.25f);
                     obstring = "front";
                     pushtring = "rear";
                 }
             }
         }
 
+        #region Configuration
         private class ConfigData
         {
             [JsonProperty(PropertyName = "Disallow building blocks, doors, and windows")]
@@ -413,5 +435,6 @@ namespace Oxide.Plugins
         {
             Config.WriteObject(config, true);
         }
+        #endregion Configuration
     }
 }
