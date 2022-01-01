@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
-using Rust;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +8,7 @@ using UnityEngine;
 namespace Oxide.Plugins
 {
     [Info("PushIt", "RFC1920", "1.0.2")]
-    [Description("Rearrange furniture by pushing it into place.")]
+    [Description("Rearrange furniture and other items by pushing and pulling them into place.")]
     internal class PushIt : RustPlugin
     {
         private ConfigData configData;
@@ -80,8 +79,8 @@ namespace Oxide.Plugins
                 return;
             }
 
-            PushMe haspush = ent.gameObject.GetComponent<PushMe>();
-            string entname = ent.ShortPrefabName;
+            PushMe haspush = ent?.gameObject.GetComponent<PushMe>();
+            string entname = ent?.ShortPrefabName;
             if (haspush != null)
             {
                 UnityEngine.Object.Destroy(haspush);
@@ -215,18 +214,7 @@ namespace Oxide.Plugins
                 if (directional < 1)
                 {
                     // Only while pushing (and cannot see the other side)
-                    RaycastHit[] hits = Physics.RaycastAll(checkpos, direction, checkDistance);//, layerMask, QueryTriggerInteraction.Collide)
-                    for (int i = 0; i < hits.Length; i++)
-                    {
-                        string ihit = hits[i].GetEntity()?.ShortPrefabName;
-                        if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
-                        {
-                            Instance.DoLog($"Hit a {ihit}");
-                            player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
-                            Instance.Message(player.IPlayer, "obstruction", ihit);
-                            return;
-                        }
-                    }
+                    if (checkHit()) return;
                 }
 
                 if (directional > 0)
@@ -248,6 +236,23 @@ namespace Oxide.Plugins
                 ServerMgr.Instance.StartCoroutine(RefreshChildren());
             }
 
+            private bool checkHit()
+            {
+                RaycastHit[] hits = Physics.RaycastAll(checkpos, direction, checkDistance);//, layerMask, QueryTriggerInteraction.Collide)
+                for (int i = 0; i < hits.Length; i++)
+                {
+                    string ihit = hits[i].GetEntity()?.ShortPrefabName;
+                    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
+                    {
+                        Instance.DoLog($"Hit a {ihit}");
+                        player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
+                        Instance.Message(player.IPlayer, "obstruction", ihit);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             private void Rotate(bool ccw = false)
             {
                 if (Vector3.Distance(player.transform.position, target.transform.position) > Instance.configData.minDistance)
@@ -256,27 +261,18 @@ namespace Oxide.Plugins
                     return;
                 }
 
+                //DetectSide(true, ccw);
                 if (ccw)
                 {
+                    //if (checkHit()) return;
                     gameObject.transform.Rotate(0, -0.5f, 0);
                 }
                 else
                 {
+                    //if (checkHit()) return;
                     gameObject.transform.Rotate(0, +0.5f, 0);
                 }
 
-                //RaycastHit[] hits = Physics.RaycastAll(checkpos, direction, checkDistance);//, layerMask, QueryTriggerInteraction.Collide)
-                //for (int i = 0; i < hits.Length; i++)
-                //{
-                //    string ihit = hits[i].GetEntity()?.ShortPrefabName;
-                //    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
-                //    {
-                //        Instance.DoLog($"Hit a {ihit}");
-                //        player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
-                //        Instance.Message(player.IPlayer, "obstruction", ihit);
-                //        return;
-                //    }
-                //}
                 ServerMgr.Instance.StartCoroutine(RefreshChildren());
             }
 
@@ -294,7 +290,7 @@ namespace Oxide.Plugins
                 yield return new WaitForEndOfFrame();
             }
 
-            private void DetectSide()
+            private void DetectSide(bool rotatation=false, bool ccw=false)
             {
                 atleft = false; atright = false;
                 front = target.transform.TransformPoint(Vector3.forward * (depth / 2));
@@ -315,6 +311,18 @@ namespace Oxide.Plugins
 
                 Vector3 ybump = new Vector3(0, 0.1f, 0);
                 Vector3 cbump = new Vector3(0, height/2, 0);
+
+                if (rotatation)
+                {
+                    if (ccw)
+                    {
+                        // checkpos should be right rear
+                        return;
+                    }
+                    // checkpos should be left rear
+                    return;
+                }
+
                 if (fdist < bdist)
                 {
                     if (fdist > ldist && atleft)
