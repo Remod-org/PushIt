@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("PushIt", "RFC1920", "1.0.3")]
+    [Info("PushIt", "RFC1920", "1.0.4")]
     [Description("Rearrange furniture and other items by pushing and pulling them into place.")]
     internal class PushIt : RustPlugin
     {
@@ -242,7 +242,7 @@ namespace Oxide.Plugins
                 for (int i = 0; i < hits.Length; i++)
                 {
                     string ihit = hits[i].GetEntity()?.ShortPrefabName;
-                    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && ihit != "rug")
+                    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && (Instance.configData?.noHitItems.Contains(ihit) == false))
                     {
                         Instance.DoLog($"Hit a {ihit}");
                         player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
@@ -389,10 +389,13 @@ namespace Oxide.Plugins
         }
 
         #region Configuration
-        private class ConfigData
+        public class ConfigData
         {
             [JsonProperty(PropertyName = "Disallow building blocks, doors, and windows")]
             public bool disallowBlocks;
+
+            [JsonProperty(PropertyName = "Do not get stuck on these items.  Floors always included.")]
+            public List<string> noHitItems;
 
             [JsonProperty(PropertyName = "Disallow moving players")]
             public bool disallowPlayer;
@@ -416,6 +419,7 @@ namespace Oxide.Plugins
             ConfigData config = new ConfigData
             {
                 disallowBlocks = true,
+                noHitItems = new List<string>() { "rug.deployed" },
                 disallowOthers = true,
                 disallowPlayer = true,
                 disallowNPC = true,
@@ -433,6 +437,11 @@ namespace Oxide.Plugins
             if (configData.minDistance == 0)
             {
                 configData.minDistance = 5;
+            }
+
+            if (configData.Version < new VersionNumber(1, 0, 4))
+            {
+                configData.noHitItems = new List<string>() { "rug.deployed" };
             }
 
             configData.Version = Version;

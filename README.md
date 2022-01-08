@@ -22,6 +22,9 @@ For items that can be picked up anyway, if they get stuck inside a wall for some
 ```json
 {
   "Disallow building blocks, doors, and windows": true,
+  "Do not get stuck on these items.  Floors always included.": [
+    "rug.deployed"
+  ],
   "Disallow moving players": true,
   "Disallow moving NPCs": true,
   "Disallow other things that can cause trouble": true,
