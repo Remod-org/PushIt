@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("PushIt", "RFC1920", "1.0.4")]
+    [Info("PushIt", "RFC1920", "1.0.6")]
     [Description("Rearrange furniture and other items by pushing and pulling them into place.")]
     internal class PushIt : RustPlugin
     {
@@ -91,7 +91,7 @@ namespace Oxide.Plugins
 
             PushMe push = ent.gameObject.AddComponent<PushMe>();
             push.player = player;
-            pushentity.Add(player.userID, ent.net.ID);
+            pushentity.Add(player.userID, (uint)ent.net.ID.Value);
             Message(iplayer, "startpush", entname);
         }
 
@@ -242,7 +242,7 @@ namespace Oxide.Plugins
                 for (int i = 0; i < hits.Length; i++)
                 {
                     string ihit = hits[i].GetEntity()?.ShortPrefabName;
-                    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && (Instance.configData?.noHitItems.Contains(ihit) == false))
+                    if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && (Instance.configData?.noHitItems?.Contains(ihit) == false))
                     {
                         Instance.DoLog($"Hit a {ihit}");
                         player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
