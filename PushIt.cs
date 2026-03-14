@@ -1,3 +1,23 @@
+#region License (GPL v2)
+/*
+    Push-It
+    Copyright (c) 2021 RFC1920 <desolationoutpostpve@gmail.com>
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License v2.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+    Optionally you can also view the license at <http://www.gnu.org/licenses/>.
+*/
+#endregion License Information (GPL v2)
 using Newtonsoft.Json;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
@@ -7,7 +27,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("PushIt", "RFC1920", "1.0.6")]
+    [Info("PushIt", "RFC1920", "1.0.7")]
     [Description("Rearrange furniture and other items by pushing and pulling them into place.")]
     internal class PushIt : RustPlugin
     {
@@ -52,7 +72,7 @@ namespace Oxide.Plugins
 
         private void DoLog(string message)
         {
-            if (debug) Interface.Oxide.LogInfo(message);
+            if (debug) Interface.GetMod().LogInfo(message);
         }
 
         private void Unload()
@@ -208,7 +228,7 @@ namespace Oxide.Plugins
 
                 Instance.DoLog($"Player position: {player.transform.position}");
                 Instance.DoLog($"Old position: {target.transform.position}");
-                Instance.DoLog($"Checking for obstruction at {checkpos.ToString()} ({obstring}), distance: {checkDistance.ToString()}, directional {directional.ToString()}");
+                Instance.DoLog($"Checking for obstruction at {checkpos} ({obstring}), distance: {checkDistance}, directional {directional}");
 
                 DetectSide();
                 if (directional < 1)
@@ -244,6 +264,7 @@ namespace Oxide.Plugins
                     string ihit = hits[i].GetEntity()?.ShortPrefabName;
                     if (ihit.Length > 0 && hits[i].GetEntity() != target && ihit != "floor" && (Instance.configData?.noHitItems?.Contains(ihit) == false))
                     {
+                        if (ihit.Contains("wallpaper")) return false;
                         Instance.DoLog($"Hit a {ihit}");
                         player.SendConsoleCommand("ddraw.text", 5, Color.yellow, hits[i].transform.position, "<size=40>HIT</size>");
                         Instance.Message(player.IPlayer, "obstruction", ihit);
@@ -309,8 +330,8 @@ namespace Oxide.Plugins
                     atleft = true; atright = false;
                 }
 
-                Vector3 ybump = new Vector3(0, 0.1f, 0);
-                Vector3 cbump = new Vector3(0, height/2, 0);
+                Vector3 ybump = new(0, 0.1f, 0);
+                Vector3 cbump = new(0, height/2, 0);
 
                 if (rotatation)
                 {
@@ -416,7 +437,7 @@ namespace Oxide.Plugins
         protected override void LoadDefaultConfig()
         {
             Puts("Creating new config file.");
-            ConfigData config = new ConfigData
+            ConfigData config = new()
             {
                 disallowBlocks = true,
                 noHitItems = new List<string>() { "rug.deployed" },

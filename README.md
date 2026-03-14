@@ -7,8 +7,9 @@ Permission is required to use, but it is recommended that you either have the Re
 
 For items that can be picked up anyway, if they get stuck inside a wall for some reason they can be removed easily without another plugin.  But, keep this potential problem in mind for items that cannot be picked up.
 
-[![Watch the video](https://i.imgur.com/uviGsoa.png)](https://www.youtube.com/watch?v=w-wzVZowWdE)
+Note that this will skip moving wallpaper, so you don't have to add that to the config.
 
+[![Watch the video](https://i.imgur.com/uviGsoa.png)](https://www.youtube.com/watch?v=w-wzVZowWdE)
 
 ## Commands
 
@@ -33,7 +34,7 @@ For items that can be picked up anyway, if they get stuck inside a wall for some
   "Version": {
     "Major": 1,
     "Minor": 0,
-    "Patch": 2
+    "Patch": 6
   }
 }
 ```
