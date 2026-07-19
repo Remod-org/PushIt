@@ -27,7 +27,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("PushIt", "RFC1920", "1.0.7")]
+    [Info("PushIt", "RFC1920", "1.0.8")]
     [Description("Rearrange furniture and other items by pushing and pulling them into place.")]
     internal class PushIt : RustPlugin
     {
@@ -35,7 +35,7 @@ namespace Oxide.Plugins
         public static PushIt Instance;
         public bool debug = true;
         private const string permPush = "pushit.use";
-        public Dictionary<ulong, ulong> pushentity = new Dictionary<ulong, ulong>();
+        public Dictionary<ulong, ulong> pushentity = new();
 
         #region Message
         private string Lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
@@ -82,9 +82,9 @@ namespace Oxide.Plugins
 
         private void DestroyAll<T>() where T : MonoBehaviour
         {
-            foreach (T type in UnityEngine.Object.FindObjectsOfType<T>())
+            foreach (UnityEngine.Object gameObj in UnityEngine.Object.FindObjectsByType(typeof(T), FindObjectsSortMode.None))
             {
-                UnityEngine.Object.Destroy(type);
+                UnityEngine.Object.Destroy(gameObj);
             }
         }
 
@@ -247,7 +247,7 @@ namespace Oxide.Plugins
                 }
 
                 float savey = target.transform.position.y;
-                Vector3 newpos = new Vector3(player.transform.position.x, savey, player.transform.position.z);
+                Vector3 newpos = new(player.transform.position.x, savey, player.transform.position.z);
                 target.transform.position = Vector3.MoveTowards(target.transform.position, newpos, directional * 1f * Time.deltaTime);
 
                 if (stab?.grounded == false) stab.grounded = true;
